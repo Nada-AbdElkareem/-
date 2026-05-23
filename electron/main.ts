@@ -59,7 +59,8 @@ function startExpressServer() {
       ...process.env,
       NODE_ENV: 'production',
       DB_PATH: dbDestPath,
-      PORT: '3000'
+      PORT: '3000',
+      ELECTRON_RUN_AS_NODE: '1'
     },
     silent: false
   });
@@ -101,7 +102,8 @@ function createWindow() {
       preload: path.join(resolvedDirname, 'preload.cjs'),
       nodeIntegration: false,
       contextIsolation: true,
-    },
+      sandbox: false
+  },
     // إخفاء القائمة الافتراضية للحصول على مظهر احترافي ومميز
     autoHideMenuBar: true,
   });

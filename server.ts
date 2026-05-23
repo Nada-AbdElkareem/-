@@ -30,8 +30,8 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const resolvedFilename = __filename;
-const resolvedDirname = __dirname;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const JWT_SECRET = process.env.JWT_SECRET || "guest-house-secret-key-123";
 
 async function startServer() {
