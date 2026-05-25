@@ -92,6 +92,8 @@ async function startBackendServer() {
   process.env.PORT = String(SERVER_PORT);
   process.env.NODE_ENV = isDev ? 'development' : 'production';
   process.env.DB_PATH = dbPath;
+  // Tell the server exactly where the built frontend files are
+  process.env.DIST_PATH = getResourcePath('dist');
 
   try {
     let serverModule;

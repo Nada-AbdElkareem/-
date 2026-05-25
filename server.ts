@@ -1367,7 +1367,7 @@ export async function startServer() {
     }
   });
 
-  // --- Vite Middleware ---
+  // --- Vite Middleware / Static Files ---
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -1375,9 +1375,17 @@ export async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), "dist");
+    // In production (packaged Electron):
+    // - DIST_PATH env var is set by main.cjs pointing to resources/dist
+    // - Or fall back to resolvedDirname/../dist (relative to compiled server.cjs location)
+    const distPath =
+      process.env.DIST_PATH ||
+      path.join(resolvedDirname, "..", "dist") ||
+      path.join(process.cwd(), "dist");
+
+    console.log("[Server] Serving static files from:", distPath);
     app.use(express.static(distPath));
-    app.get("*", (req, res) => {
+    app.get("*", (_req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }

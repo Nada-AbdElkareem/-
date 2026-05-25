@@ -93,7 +93,6 @@
     },
     "files": [
       "electron/**/*",
-      "dist/**/*",
       "package.json"
     ],
     "extraResources": [
