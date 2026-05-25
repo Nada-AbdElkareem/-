@@ -4,7 +4,10 @@
   "private": true,
   "version": "1.0.0",
   "description": "نظام متكامل لإدارة دور الضيافة الطبية",
-  "author": "Nada AbdElkareem",
+  "author": {
+    "name": "Nada AbdElkareem",
+    "email": "nada@example.com"
+  },
   "license": "MIT",
   "type": "module",
   "main": "electron/main.cjs",
