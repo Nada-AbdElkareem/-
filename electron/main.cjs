@@ -95,10 +95,26 @@ async function startBackendServer() {
   // Tell the server exactly where the built frontend files are
   process.env.DIST_PATH = getResourcePath('dist');
 
+  // ── Native module resolution for packaged app ──────────────────────────────
+  // better-sqlite3 is a native .node binary unpacked from asar.
+  // We must tell Node.js where to find it so require('better-sqlite3') works.
+  if (app.isPackaged) {
+    const unpackedModules = path.join(
+      process.resourcesPath,
+      'app.asar.unpacked',
+      'node_modules'
+    );
+    // Prepend to NODE_PATH so native modules are found first
+    const existing = process.env.NODE_PATH || '';
+    process.env.NODE_PATH = existing ? `${unpackedModules};${existing}` : unpackedModules;
+    require('module')._initPaths();
+    console.log('[Electron] NODE_PATH set to:', process.env.NODE_PATH);
+  }
+
   try {
     let serverModule;
     if (app.isPackaged) {
-      // Production: load compiled server bundle
+      // Production: load compiled server bundle (all JS deps are bundled in)
       const serverCjsPath = getResourcePath('dist', 'server.cjs');
       console.log('[Electron] Loading production server from:', serverCjsPath);
       serverModule = require(serverCjsPath);
@@ -115,6 +131,7 @@ async function startBackendServer() {
       console.log('[Electron] Server started on port', SERVER_PORT);
     } else {
       console.error('[Electron] startServer export not found!');
+      throw new Error('startServer export not found in server module');
     }
   } catch (err) {
     console.error('[Electron] Failed to start server:', err);

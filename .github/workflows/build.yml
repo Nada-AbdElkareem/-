@@ -38,7 +38,14 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || 'placeholder' }}
 
       - name: 🔨 Build backend (esbuild)
-        run: npx esbuild server.ts --bundle --platform=node --format=cjs --packages=external --outfile=dist/server.cjs
+        run: |
+          npx esbuild server.ts `
+            --bundle `
+            --platform=node `
+            --format=cjs `
+            --external:better-sqlite3 `
+            --define:process.env.NODE_ENV='"production"' `
+            --outfile=dist/server.cjs
 
       - name: 📦 Package with electron-builder
         run: npx electron-builder --win --publish never
