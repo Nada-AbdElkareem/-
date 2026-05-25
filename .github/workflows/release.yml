@@ -19,45 +19,51 @@ jobs:
   # Windows Build
   # ─────────────────────────────────────────────────────────
   build-windows:
-    name: Build for Windows
+    name: 🪟 Build for Windows
     runs-on: windows-latest
 
     steps:
-      - name: Checkout code
+      - name: ⬇️ Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: ⚙️ Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: 📦 Install dependencies
         run: npm ci
 
-      - name: Rebuild native modules for Electron
+      - name: 🔧 Rebuild native modules (better-sqlite3)
         run: npx electron-rebuild -f -w better-sqlite3
         env:
-          npm_config_msvs_version: '2019'
+          npm_config_msvs_version: '2022'
 
-      - name: Build frontend (Vite)
+      - name: 🏗️ Build frontend (Vite)
         run: npx vite build
         env:
           NODE_ENV: production
-          GEMINI_API_KEY: placeholder
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || 'placeholder-for-build' }}
 
-      - name: Build backend bundle (esbuild)
-        run: npx esbuild server.ts --bundle --platform=node --format=cjs --packages=external --outfile=dist/server.cjs
+      - name: 🔨 Build backend bundle (esbuild)
+        run: |
+          npx esbuild server.ts `
+            --bundle `
+            --platform=node `
+            --format=cjs `
+            --packages=external `
+            --outfile=dist/server.cjs
 
-      - name: Build Electron app (Windows)
+      - name: 📦 Package Electron app (Windows)
         run: npx electron-builder --win --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: List output
+      - name: 📋 List output files
         run: Get-ChildItem dist-electron -Recurse | Select-Object Name, Length
 
-      - name: Upload Windows installer
+      - name: 📤 Upload Windows installer
         uses: actions/upload-artifact@v4
         with:
           name: windows-installer
@@ -65,50 +71,60 @@ jobs:
             dist-electron/*.exe
             dist-electron/*.zip
           retention-days: 30
+          if-no-files-found: warn
 
   # ─────────────────────────────────────────────────────────
   # Linux Build
   # ─────────────────────────────────────────────────────────
   build-linux:
-    name: Build for Linux
+    name: 🐧 Build for Linux
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: ⬇️ Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: ⚙️ Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
 
-      - name: Install system dependencies
+      - name: 🔧 Install system dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y rpm fakeroot
+          sudo apt-get update -qq
+          sudo apt-get install -y rpm fakeroot dpkg
 
-      - name: Install dependencies
+      - name: 📦 Install Node dependencies
         run: npm ci
 
-      - name: Rebuild native modules for Electron
+      - name: 🔧 Rebuild native modules (better-sqlite3)
         run: npx electron-rebuild -f -w better-sqlite3
 
-      - name: Build frontend (Vite)
+      - name: 🏗️ Build frontend (Vite)
         run: npx vite build
         env:
           NODE_ENV: production
-          GEMINI_API_KEY: placeholder
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || 'placeholder-for-build' }}
 
-      - name: Build backend bundle (esbuild)
-        run: npx esbuild server.ts --bundle --platform=node --format=cjs --packages=external --outfile=dist/server.cjs
+      - name: 🔨 Build backend bundle (esbuild)
+        run: |
+          npx esbuild server.ts \
+            --bundle \
+            --platform=node \
+            --format=cjs \
+            --packages=external \
+            --outfile=dist/server.cjs
 
-      - name: Build Electron app (Linux)
+      - name: 📦 Package Electron app (Linux)
         run: npx electron-builder --linux --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload Linux packages
+      - name: 📋 List output files
+        run: ls -lh dist-electron/
+
+      - name: 📤 Upload Linux packages
         uses: actions/upload-artifact@v4
         with:
           name: linux-packages
@@ -116,49 +132,79 @@ jobs:
             dist-electron/*.AppImage
             dist-electron/*.deb
           retention-days: 30
+          if-no-files-found: warn
 
   # ─────────────────────────────────────────────────────────
   # Create GitHub Release
   # ─────────────────────────────────────────────────────────
   create-release:
-    name: Create GitHub Release
+    name: 🚀 Create GitHub Release
     needs: [build-windows, build-linux]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
 
     steps:
-      - name: Checkout code
+      - name: ⬇️ Checkout code
         uses: actions/checkout@v4
 
-      - name: Download Windows artifacts
+      - name: 📥 Download Windows artifacts
         uses: actions/download-artifact@v4
         with:
           name: windows-installer
           path: release-files/
 
-      - name: Download Linux artifacts
+      - name: 📥 Download Linux artifacts
         uses: actions/download-artifact@v4
         with:
           name: linux-packages
           path: release-files/
 
-      - name: List release files
-        run: ls -la release-files/
+      - name: 📋 List release files
+        run: ls -lh release-files/
 
-      - name: Create Release
+      - name: 🚀 Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: release-files/*
-          name: "نظام دار الضيافة الطبية ${{ github.ref_name }}"
+          name: "🏥 نظام دار الضيافة الطبية ${{ github.ref_name }}"
           body: |
-            ## 🏥 نظام إدارة دار الضيافة الطبية ${{ github.ref_name }}
+            ## 🏥 نظام إدارة دار الضيافة الطبية — ${{ github.ref_name }}
 
-            ### التحميل
-            - **Windows**: تحميل ملف `.exe` للتثبيت أو `.zip` للنسخة المحمولة
-            - **Linux**: تحميل `.AppImage` أو `.deb`
+            تطبيق سطح مكتب متكامل لإدارة دور الضيافة الطبية.
 
-            ### التغييرات
-            راجع [CHANGELOG.md](./CHANGELOG.md) للتفاصيل.
+            ---
+
+            ### 📥 التحميل
+
+            | النظام | الملف | الوصف |
+            |--------|-------|-------|
+            | 🪟 Windows | `*.exe` | مثبّت كامل |
+            | 🪟 Windows | `*.zip` | نسخة محمولة (بدون تثبيت) |
+            | 🐧 Linux | `*.AppImage` | تشغيل مباشر |
+            | 🐧 Linux | `*.deb` | حزمة Debian/Ubuntu |
+
+            ---
+
+            ### 🚀 خطوات التثبيت
+
+            **Windows:**
+            1. حمّل ملف `.exe`
+            2. شغّل المثبّت واتبع الخطوات
+            3. ابحث عن البرنامج في قائمة Start
+
+            **Linux:**
+            1. حمّل ملف `.AppImage`
+            2. اجعله قابلاً للتشغيل: `chmod +x *.AppImage`
+            3. شغّله مباشرةً: `./Medical-Guest-House*.AppImage`
+
+            ---
+
+            ### ⚙️ المتطلبات
+            - لا يحتاج Node.js أو أي شيء مسبق — كل شيء مُدمج!
+
+            ### 📋 ملاحظات
+            - قاعدة البيانات تُنشأ تلقائياً عند أول تشغيل
+            - راجع [README.md](./README.md) للمزيد
           draft: false
           prerelease: false
         env:

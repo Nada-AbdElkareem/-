@@ -3,19 +3,19 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
 import { db } from "./src/db/index";
-import { 
-  users, 
-  patients, 
-  companions, 
-  rooms, 
-  beds, 
-  stays, 
-  services, 
-  stayServices, 
-  invoices, 
-  auditLogs, 
-  documents, 
-  stayCompanions, 
+import {
+  users,
+  patients,
+  companions,
+  rooms,
+  beds,
+  stays,
+  services,
+  stayServices,
+  invoices,
+  auditLogs,
+  documents,
+  stayCompanions,
   appSettings,
   inventoryItems,
   inventoryTransactions,
@@ -38,7 +38,7 @@ const resolvedDirname = typeof __dirname !== "undefined"
   : path.dirname(resolvedFilename);
 const JWT_SECRET = process.env.JWT_SECRET || "guest-house-secret-key-123";
 
-async function startServer() {
+export async function startServer() {
   const app = express();
   const PORT = parseInt(process.env.PORT || '3000', 10);
 
@@ -205,7 +205,7 @@ async function startServer() {
       if (q) {
         results = await baseQuery
           .where(or(
-            like(p.fullName, `%${q}%`), 
+            like(p.fullName, `%${q}%`),
             like(p.nationalId, `%${q}%`),
             like(p.mobile, `%${q}%`)
           ))
@@ -224,7 +224,7 @@ async function startServer() {
     try {
       const result = db.transaction((tx) => {
         const [newPatient] = tx.insert(patients).values(patientData).returning().all();
-        
+
         if (companionsData && Array.isArray(companionsData)) {
           for (const comp of companionsData) {
             tx.insert(companions).values({
@@ -258,7 +258,7 @@ async function startServer() {
       const patientId = parseInt(req.params.id);
       const [patient] = await db.select().from(patients).where(eq(patients.id, patientId)).limit(1);
       if (!patient) return res.status(404).json({ error: "Patient not found" });
-      
+
       const [patientCompanions, patientStaysRaw, patientDocuments] = await Promise.all([
         db.select().from(companions).where(eq(companions.patientId, patientId)),
         db.select({
@@ -276,13 +276,13 @@ async function startServer() {
           companionRelationship: companions.relationship,
           companionMobile: companions.mobile
         })
-        .from(stays)
-        .leftJoin(rooms, eq(stays.roomId, rooms.id))
-        .leftJoin(beds, eq(stays.bedId, beds.id))
-        .leftJoin(stayCompanions, eq(stayCompanions.stayId, stays.id))
-        .leftJoin(companions, eq(stayCompanions.companionId, companions.id))
-        .where(eq(stays.patientId, patientId))
-        .orderBy(desc(stays.checkInDate)),
+          .from(stays)
+          .leftJoin(rooms, eq(stays.roomId, rooms.id))
+          .leftJoin(beds, eq(stays.bedId, beds.id))
+          .leftJoin(stayCompanions, eq(stayCompanions.stayId, stays.id))
+          .leftJoin(companions, eq(stayCompanions.companionId, companions.id))
+          .where(eq(stays.patientId, patientId))
+          .orderBy(desc(stays.checkInDate)),
         db.select().from(documents).where(eq(documents.patientId, patientId)).orderBy(desc(documents.createdAt))
       ]);
 
@@ -307,7 +307,7 @@ async function startServer() {
         if (row.companionName) {
           // Prevent duplicate companion entries for the same stay
           if (!staysMap[row.id].companions.find((c: any) => c.fullName === row.companionName)) {
-            staysMap[row.id].companions.push({ 
+            staysMap[row.id].companions.push({
               fullName: row.companionName,
               relationship: row.companionRelationship,
               mobile: row.companionMobile
@@ -315,12 +315,12 @@ async function startServer() {
           }
         }
       });
-      
-      res.json({ 
-        ...patient, 
-        companions: patientCompanions, 
-        stays: Object.values(staysMap).sort((a: any, b: any) => b.checkInDate - a.checkInDate), 
-        documents: patientDocuments 
+
+      res.json({
+        ...patient,
+        companions: patientCompanions,
+        stays: Object.values(staysMap).sort((a: any, b: any) => b.checkInDate - a.checkInDate),
+        documents: patientDocuments
       });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -507,13 +507,13 @@ async function startServer() {
         serviceQuantity: stayServices.quantity,
         serviceTotalCost: stayServices.totalCost
       })
-      .from(stays)
-      .innerJoin(patients, eq(stays.patientId, patients.id))
-      .innerJoin(rooms, eq(stays.roomId, rooms.id))
-      .innerJoin(beds, eq(stays.bedId, beds.id))
-      .leftJoin(stayServices, eq(stayServices.stayId, stays.id))
-      .leftJoin(services, eq(stayServices.serviceId, services.id))
-      .orderBy(desc(stays.checkInDate));
+        .from(stays)
+        .innerJoin(patients, eq(stays.patientId, patients.id))
+        .innerJoin(rooms, eq(stays.roomId, rooms.id))
+        .innerJoin(beds, eq(stays.bedId, beds.id))
+        .leftJoin(stayServices, eq(stayServices.stayId, stays.id))
+        .leftJoin(services, eq(stayServices.serviceId, services.id))
+        .orderBy(desc(stays.checkInDate));
 
       const reportMap: Record<number, any> = {};
       resultsRaw.forEach(row => {
@@ -541,7 +541,7 @@ async function startServer() {
           });
         }
       });
-      
+
       res.json(Object.values(reportMap));
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -561,11 +561,11 @@ async function startServer() {
         stayId: stays.id,
         patientName: patients.fullName
       })
-      .from(rooms)
-      .leftJoin(beds, eq(beds.roomId, rooms.id))
-      .leftJoin(stays, and(eq(stays.bedId, beds.id), eq(stays.status, "active")))
-      .leftJoin(patients, eq(stays.patientId, patients.id));
-      
+        .from(rooms)
+        .leftJoin(beds, eq(beds.roomId, rooms.id))
+        .leftJoin(stays, and(eq(stays.bedId, beds.id), eq(stays.status, "active")))
+        .leftJoin(patients, eq(stays.patientId, patients.id));
+
       const roomsMap: Record<number, any> = {};
       allRoomsRaw.forEach(row => {
         const roomId = row.room.id;
@@ -585,7 +585,7 @@ async function startServer() {
           }
         }
       });
-      
+
       const finalRooms = Object.values(roomsMap).map((room: any) => ({
         ...room,
         beds: Object.values(room.beds)
@@ -618,18 +618,18 @@ async function startServer() {
         patientName: patients.fullName,
         roomNumber: rooms.roomNumber,
       })
-      .from(stays)
-      .innerJoin(patients, eq(stays.patientId, patients.id))
-      .innerJoin(rooms, eq(stays.roomId, rooms.id))
-      .where(
-        and(
-          eq(stays.status, "active"),
-          sql`${stays.expectedCheckOutDate} <= ${upcomingLimit.getTime()}`,
-          sql`${stays.expectedCheckOutDate} >= ${now.getTime()}`
+        .from(stays)
+        .innerJoin(patients, eq(stays.patientId, patients.id))
+        .innerJoin(rooms, eq(stays.roomId, rooms.id))
+        .where(
+          and(
+            eq(stays.status, "active"),
+            sql`${stays.expectedCheckOutDate} <= ${upcomingLimit.getTime()}`,
+            sql`${stays.expectedCheckOutDate} >= ${now.getTime()}`
+          )
         )
-      )
-      .orderBy(stays.expectedCheckOutDate);
-      
+        .orderBy(stays.expectedCheckOutDate);
+
       res.json(results);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -647,13 +647,13 @@ async function startServer() {
         room: rooms,
         bed: beds,
       })
-      .from(stays)
-      .innerJoin(patients, eq(stays.patientId, patients.id))
-      .innerJoin(rooms, eq(stays.roomId, rooms.id))
-      .innerJoin(beds, eq(stays.bedId, beds.id))
-      .where(eq(stays.status, "active"))
-      .orderBy(desc(stays.checkInDate));
-      
+        .from(stays)
+        .innerJoin(patients, eq(stays.patientId, patients.id))
+        .innerJoin(rooms, eq(stays.roomId, rooms.id))
+        .innerJoin(beds, eq(stays.bedId, beds.id))
+        .where(eq(stays.status, "active"))
+        .orderBy(desc(stays.checkInDate));
+
       res.json(results);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -667,9 +667,9 @@ async function startServer() {
         // 0. Update patient contact info if provided
         if (mobile || referralOrg) {
           tx.update(patients)
-            .set({ 
-              mobile: mobile || undefined, 
-              referralOrg: referralOrg || undefined 
+            .set({
+              mobile: mobile || undefined,
+              referralOrg: referralOrg || undefined
             })
             .where(eq(patients.id, patientId)).run();
         }
@@ -769,7 +769,7 @@ async function startServer() {
               .from(stayCompanions)
               .where(and(eq(stayCompanions.stayId, stayId), eq(stayCompanions.companionId, parseInt(cId))))
               .limit(1).all();
-            
+
             if (!existing) {
               tx.insert(stayCompanions).values({
                 stayId,
@@ -808,14 +808,14 @@ async function startServer() {
         const checkIn = new Date(stay.checkInDate);
         const checkOut = actualCheckOutDate ? new Date(actualCheckOutDate) : new Date();
         const diffDays = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 3600 * 24)) || 1;
-        
+
         // Count companions for this stay
         const comps = tx.select({ count: sql<number>`count(*)` })
           .from(stayCompanions)
           .where(eq(stayCompanions.stayId, stayId)).all();
         const companionCount = comps[0]?.count || 0;
 
-        const dailyRate = 50.0; 
+        const dailyRate = 50.0;
         const roomTotal = diffDays * dailyRate * (1 + companionCount);
 
         // Sum of services used during stay
@@ -823,7 +823,7 @@ async function startServer() {
           .from(stayServices)
           .where(eq(stayServices.stayId, stayId)).all();
         const servicesTotal = servicesSum?.total || 0;
-        
+
         const totalAmount = roomTotal + servicesTotal;
 
         tx.insert(invoices).values({
@@ -855,8 +855,8 @@ async function startServer() {
         unpaidAmount: sql<number>`SUM(CASE WHEN status = 'unpaid' THEN final_amount ELSE 0 END)`,
         count: sql<number>`COUNT(*)`
       })
-      .from(invoices)
-      .where(filters.length > 0 ? and(...filters) : undefined);
+        .from(invoices)
+        .where(filters.length > 0 ? and(...filters) : undefined);
 
       res.json(summary || { totalRevenue: 0, paidAmount: 0, unpaidAmount: 0, count: 0 });
     } catch (err: any) {
@@ -873,7 +873,7 @@ async function startServer() {
       const filters = [];
       if (from) filters.push(sql`${invoices.createdAt} >= ${from.getTime()}`);
       if (to) filters.push(sql`${invoices.createdAt} <= ${to.getTime()}`);
-      
+
       const results = await db.select({
         id: invoices.id,
         totalAmount: invoices.totalAmount,
@@ -882,14 +882,14 @@ async function startServer() {
         createdAt: invoices.createdAt,
         patientName: patients.fullName,
       })
-      .from(invoices)
-      .innerJoin(stays, eq(invoices.stayId, stays.id))
-      .innerJoin(patients, eq(stays.patientId, patients.id))
-      .where(and(
-        filters.length > 0 ? and(...filters) : undefined,
-        q ? or(like(patients.fullName, `%${q}%`), like(patients.nationalId, `%${q}%`)) : undefined
-      ))
-      .orderBy(desc(invoices.createdAt));
+        .from(invoices)
+        .innerJoin(stays, eq(invoices.stayId, stays.id))
+        .innerJoin(patients, eq(stays.patientId, patients.id))
+        .where(and(
+          filters.length > 0 ? and(...filters) : undefined,
+          q ? or(like(patients.fullName, `%${q}%`), like(patients.nationalId, `%${q}%`)) : undefined
+        ))
+        .orderBy(desc(invoices.createdAt));
 
       res.json(results);
     } catch (err: any) {
@@ -950,11 +950,11 @@ async function startServer() {
         serviceName: services.name,
         category: services.category
       })
-      .from(stayServices)
-      .innerJoin(services, eq(stayServices.serviceId, services.id))
-      .where(eq(stayServices.stayId, stayId))
-      .orderBy(desc(stayServices.serviceDate));
-      
+        .from(stayServices)
+        .innerJoin(services, eq(stayServices.serviceId, services.id))
+        .where(eq(stayServices.stayId, stayId))
+        .orderBy(desc(stayServices.serviceDate));
+
       res.json(results);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -969,7 +969,7 @@ async function startServer() {
       if (!service) return res.status(404).json({ error: "Service not found" });
 
       const finalTotalCost = totalCostOverride !== undefined ? parseFloat(totalCostOverride) : service.unitCost * (quantity || 1);
-      
+
       const [newStayService] = await db.insert(stayServices).values({
         stayId,
         serviceId,
@@ -1059,12 +1059,12 @@ async function startServer() {
         performedByName: users.name,
         transactionDate: inventoryTransactions.transactionDate
       })
-      .from(inventoryTransactions)
-      .innerJoin(inventoryItems, eq(inventoryTransactions.itemId, inventoryItems.id))
-      .innerJoin(users, eq(inventoryTransactions.performedBy, users.id))
-      .orderBy(desc(inventoryTransactions.transactionDate))
-      .limit(100);
-      
+        .from(inventoryTransactions)
+        .innerJoin(inventoryItems, eq(inventoryTransactions.itemId, inventoryItems.id))
+        .innerJoin(users, eq(inventoryTransactions.performedBy, users.id))
+        .orderBy(desc(inventoryTransactions.transactionDate))
+        .limit(100);
+
       res.json(transactions);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -1082,11 +1082,11 @@ async function startServer() {
         performedByName: users.name,
         transactionDate: inventoryTransactions.transactionDate
       })
-      .from(inventoryTransactions)
-      .innerJoin(users, eq(inventoryTransactions.performedBy, users.id))
-      .where(eq(inventoryTransactions.itemId, itemId))
-      .orderBy(desc(inventoryTransactions.transactionDate));
-      
+        .from(inventoryTransactions)
+        .innerJoin(users, eq(inventoryTransactions.performedBy, users.id))
+        .where(eq(inventoryTransactions.itemId, itemId))
+        .orderBy(desc(inventoryTransactions.transactionDate));
+
       res.json(transactions);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -1143,7 +1143,7 @@ async function startServer() {
         pricePerUnit: parseFloat(pricePerUnit) || 0,
         updatedAt: new Date()
       }).where(eq(inventoryItems.id, itemId)).returning();
-      
+
       if (!updatedItem) {
         return res.status(404).json({ error: "الصنف غير موجود" });
       }
@@ -1180,8 +1180,8 @@ async function startServer() {
         purchaseCost: assets.purchaseCost,
         serialNumber: assets.serialNumber
       })
-      .from(assets)
-      .leftJoin(rooms, eq(assets.roomId, rooms.id));
+        .from(assets)
+        .leftJoin(rooms, eq(assets.roomId, rooms.id));
       res.json(allAssets);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -1239,7 +1239,7 @@ async function startServer() {
   app.post("/api/maintenance-logs", authenticateToken, authorizeRole(["admin", "room_supervisor"]), async (req, res) => {
     try {
       const { assetId, scheduleId, actionTaken, result, cost, performedBy, notes } = req.body;
-      
+
       const result_data = db.transaction((tx) => {
         const [log] = tx.insert(maintenanceLogs).values({
           assetId: parseInt(assetId),
@@ -1266,7 +1266,7 @@ async function startServer() {
 
         return log;
       });
-      
+
       res.json(result_data);
     } catch (err: any) {
       res.status(400).json({ error: err.message });
@@ -1282,10 +1282,10 @@ async function startServer() {
         assetName: assets.name,
         assetId: assets.id
       })
-      .from(maintenanceSchedules)
-      .innerJoin(assets, eq(maintenanceSchedules.assetId, assets.id))
-      .where(sql`${maintenanceSchedules.nextMaintenanceDate} <= ${new Date(Date.now() + 7 * 24 * 3600 * 1000).getTime()}`) // Next 7 days
-      .orderBy(maintenanceSchedules.nextMaintenanceDate);
+        .from(maintenanceSchedules)
+        .innerJoin(assets, eq(maintenanceSchedules.assetId, assets.id))
+        .where(sql`${maintenanceSchedules.nextMaintenanceDate} <= ${new Date(Date.now() + 7 * 24 * 3600 * 1000).getTime()}`) // Next 7 days
+        .orderBy(maintenanceSchedules.nextMaintenanceDate);
 
       res.json(upcoming);
     } catch (err: any) {
@@ -1332,11 +1332,11 @@ async function startServer() {
   app.get("/api/dashboard/stats", authenticateToken, async (req, res) => {
     try {
       const [
-        patientsCountResult, 
-        companionsCountResult, 
-        occupiedRoomsResult, 
-        totalRoomsResult, 
-        activeStaysResult, 
+        patientsCountResult,
+        companionsCountResult,
+        occupiedRoomsResult,
+        totalRoomsResult,
+        activeStaysResult,
         totalRevenueFinalResult
       ] = await Promise.all([
         db.select({ count: sql<number>`count(*)` }).from(patients),
@@ -1351,7 +1351,7 @@ async function startServer() {
           `
         }).from(sql`(SELECT 1) as dummy`)
       ]);
-      
+
       const totalRevenue = totalRevenueFinalResult[0]?.sum || 0;
 
       res.json({
@@ -1382,9 +1382,16 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
+  const server = app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
+  return server;
 }
 
-startServer();
+// Only auto-start if run directly (not required by Electron)
+if (process.env.ELECTRON !== 'true') {
+  startServer()
+    .then(() => console.log("Server initialized"))
+    .catch((err) => console.error("Server failed:", err));
+}
+

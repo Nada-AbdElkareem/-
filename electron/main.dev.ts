@@ -48,9 +48,16 @@ function startExpressServer() {
       NODE_ENV: 'development',
       DB_PATH: dbDestPath,
       PORT: '3000',
-      ELECTRON_RUN_AS_NODE: '1'
+
     },
-    silent: false
+    silent: true
+  });
+  serverProcess.stdout?.on('data', (data) => {
+    console.log('[Server stdout]', data.toString());
+  });
+
+  serverProcess.stderr?.on('data', (data) => {
+    console.error('[Server stderr]', data.toString());
   });
 
   serverProcess.on('error', (err) => {

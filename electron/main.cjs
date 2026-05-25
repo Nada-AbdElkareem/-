@@ -6,6 +6,12 @@ const { spawn } = require('child_process');
 const http = require('http');
 const fs = require('fs');
 
+try {
+  require('tsx/cjs');
+} catch (e) {
+  // Ignored in production
+}
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 const SERVER_PORT = process.env.PORT || 3457;
 const isDev = !app.isPackaged;
@@ -57,47 +63,33 @@ function waitForServer(url, maxAttempts = 40) {
 }
 
 // ─── Backend Server ────────────────────────────────────────────────────────────
-function startBackendServer() {
-  const serverCjsPath = getResourcePath('dist', 'server.cjs');
+async function startBackendServer() {
+  process.env.ELECTRON = 'true';  // ← المهم ده موجود
   const dbPath = getResourcePath('sqlite_db.db');
 
-  const env = {
-    ...process.env,
-    PORT: String(SERVER_PORT),
-    NODE_ENV: app.isPackaged ? 'production' : 'development',
-    DB_PATH: dbPath,
-  };
+  process.env.PORT = String(SERVER_PORT);
+  process.env.NODE_ENV = app.isPackaged ? 'production' : 'development';
+  process.env.DB_PATH = dbPath;
 
-  if (fs.existsSync(serverCjsPath)) {
-    // Production: run compiled server
-    console.log('[Electron] Starting compiled server:', serverCjsPath);
-    serverProcess = spawn('node', [serverCjsPath], {
-      cwd: getResourcePath(),
-      env,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-  } else {
-    // Development: run via tsx
-    const serverTsPath = getResourcePath('server.ts');
-    console.log('[Electron] Starting dev server via tsx:', serverTsPath);
-    serverProcess = spawn(
-      process.platform === 'win32' ? 'npx.cmd' : 'npx',
-      ['tsx', serverTsPath],
-      {
-        cwd: getResourcePath(),
-        env,
-        stdio: ['ignore', 'pipe', 'pipe'],
-        shell: false,
-      }
-    );
+  try {
+    let serverModule;
+    if (app.isPackaged) {
+      const serverCjsPath = getResourcePath('dist', 'server.cjs');
+      serverModule = require(serverCjsPath);
+    } else {
+      const serverTsPath = getResourcePath('server.ts');
+      serverModule = require(serverTsPath);
+    }
+
+    if (serverModule && serverModule.startServer) {
+      serverProcess = await serverModule.startServer();
+      console.log('[Electron] Server started internally on port', SERVER_PORT);
+    } else {
+      console.error('[Electron] startServer export not found in server module');
+    }
+  } catch (err) {
+    console.error('[Electron ERR] Failed to start server:', err);
   }
-
-  serverProcess.stdout.on('data', (data) => console.log(`[Server] ${data.toString().trim()}`));
-  serverProcess.stderr.on('data', (data) => console.error(`[Server ERR] ${data.toString().trim()}`));
-
-  serverProcess.on('exit', (code, signal) => {
-    console.log(`[Server] Process exited — code: ${code}, signal: ${signal}`);
-  });
 }
 
 // ─── Main Window ───────────────────────────────────────────────────────────────
@@ -168,14 +160,9 @@ app.whenReady().then(createWindow);
 app.on('window-all-closed', () => {
   if (serverProcess) {
     try {
-      serverProcess.kill('SIGTERM');
-      setTimeout(() => {
-        if (serverProcess && !serverProcess.killed) {
-          serverProcess.kill('SIGKILL');
-        }
-      }, 3000);
+      serverProcess.close();
     } catch (e) {
-      console.error('[Electron] Error killing server:', e);
+      console.error('[Electron] Error closing server:', e);
     }
   }
 

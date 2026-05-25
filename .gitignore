@@ -22,9 +22,14 @@ yarn-error.log*
 # Database (contains real data — never commit)
 sqlite_db.db
 sqlite_db_old.db
+sqlite_db_corrupt.db
+sqlite_db_old_corrupt.db
 *.db-journal
 *.db-shm
 *.db-wal
+
+# Test scripts
+test-db.js
 
 # OS files
 .DS_Store
