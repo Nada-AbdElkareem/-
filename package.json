@@ -98,13 +98,6 @@
     ],
     "extraResources": [
       {
-        "from": "sqlite_db.db",
-        "to": "sqlite_db.db",
-        "filter": [
-          "**/*"
-        ]
-      },
-      {
         "from": "dist",
         "to": "dist"
       }
@@ -127,15 +120,13 @@
             "x64"
           ]
         }
-      ],
-      "icon": "electron/assets/icon.ico"
+      ]
     },
     "linux": {
       "target": [
         "AppImage",
         "deb"
       ],
-      "icon": "electron/assets/icon.png",
       "category": "Office"
     },
     "nsis": {
@@ -143,13 +134,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "installerLanguages": [
-        "ar",
-        "en"
-      ],
-      "language": "1025",
-      "installerIcon": "electron/assets/icon.ico",
-      "uninstallerIcon": "electron/assets/icon.ico"
+      "language": "1025"
     }
   }
 }

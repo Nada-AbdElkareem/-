@@ -64,8 +64,17 @@ function waitForServer(url, maxAttempts = 40) {
 
 // ─── Backend Server ────────────────────────────────────────────────────────────
 async function startBackendServer() {
-  process.env.ELECTRON = 'true';  // ← المهم ده موجود
-  const dbPath = getResourcePath('sqlite_db.db');
+  process.env.ELECTRON = 'true';
+
+  // In production: use userData dir (writable) for the database
+  // In dev: use project root
+  let dbPath;
+  if (app.isPackaged) {
+    const userDataPath = app.getPath('userData');
+    dbPath = path.join(userDataPath, 'sqlite_db.db');
+  } else {
+    dbPath = getResourcePath('sqlite_db.db');
+  }
 
   process.env.PORT = String(SERVER_PORT);
   process.env.NODE_ENV = app.isPackaged ? 'production' : 'development';

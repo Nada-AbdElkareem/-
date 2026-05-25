@@ -5,32 +5,74 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
   build-windows:
+    name: 🪟 Windows — Build & Release
     runs-on: windows-latest
-    
+
     steps:
-      - name: Checkout
+      - name: ⬇️ Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: ⚙️ Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: 📦 Install dependencies
         run: npm ci
 
-      - name: Build & Package
-        run: npm run dist:win
+      - name: 🔧 Rebuild native modules (better-sqlite3)
+        run: npx electron-rebuild -f -w better-sqlite3
+        env:
+          npm_config_msvs_version: '2022'
+
+      - name: 🏗️ Build frontend (Vite)
+        run: npx vite build
+        env:
+          NODE_ENV: production
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || 'placeholder' }}
+
+      - name: 🔨 Build backend (esbuild)
+        run: npx esbuild server.ts --bundle --platform=node --format=cjs --packages=external --outfile=dist/server.cjs
+
+      - name: 📦 Package with electron-builder
+        run: npx electron-builder --win --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Release
+      - name: 📋 List output
+        run: Get-ChildItem dist-electron -Recurse | Select-Object Name, Length
+
+      - name: 🚀 Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          name: "🏥 نظام دار الضيافة الطبية ${{ github.ref_name }}"
+          body: |
+            ## 🏥 نظام إدارة دار الضيافة الطبية — ${{ github.ref_name }}
+
+            ### 📥 تحميل وتثبيت على Windows
+
+            | الملف | النوع |
+            |-------|-------|
+            | `*-Setup.exe` | مثبّت كامل (موصى به) |
+            | `*-Portable.exe` | نسخة محمولة (بدون تثبيت) |
+
+            ### 🚀 طريقة التثبيت
+            1. حمّل ملف `*-Setup.exe`
+            2. شغّل المثبّت واتبع الخطوات
+            3. ابحث عن **نظام دار الضيافة الطبية** في قائمة Start
+
+            ### ⚙️ ملاحظات
+            - لا يحتاج Node.js أو أي برامج إضافية
+            - قاعدة البيانات تُنشأ تلقائياً عند أول تشغيل
           files: |
             dist-electron/*.exe
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
