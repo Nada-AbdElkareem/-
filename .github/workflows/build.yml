@@ -27,33 +27,47 @@ jobs:
         run: npm ci
 
       - name: 🔧 Rebuild native modules (better-sqlite3)
+        shell: bash
         run: npx electron-rebuild -f -w better-sqlite3
         env:
           npm_config_msvs_version: '2022'
 
       - name: 🏗️ Build frontend (Vite)
+        shell: bash
         run: npx vite build
         env:
           NODE_ENV: production
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || 'placeholder' }}
 
-      - name: 🔨 Build backend (esbuild)
+      - name: 🔨 Build backend (esbuild — bundle all deps except better-sqlite3)
+        shell: bash
+        run: >-
+          npx esbuild server.ts
+          --bundle
+          --platform=node
+          --format=cjs
+          --external:better-sqlite3
+          --define:process.env.NODE_ENV='"production"'
+          --outfile=dist/server.cjs
+
+      - name: ✅ Verify dist contents
+        shell: bash
         run: |
-          npx esbuild server.ts `
-            --bundle `
-            --platform=node `
-            --format=cjs `
-            --external:better-sqlite3 `
-            --define:process.env.NODE_ENV='"production"' `
-            --outfile=dist/server.cjs
+          echo "=== dist/ files ==="
+          ls -lh dist/
+          echo ""
+          echo "=== server.cjs size ==="
+          du -sh dist/server.cjs
 
       - name: 📦 Package with electron-builder
+        shell: bash
         run: npx electron-builder --win --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 📋 List output
-        run: Get-ChildItem dist-electron -Recurse | Select-Object Name, Length
+      - name: 📋 List installer output
+        shell: bash
+        run: ls -lh dist-electron/
 
       - name: 🚀 Create GitHub Release
         uses: softprops/action-gh-release@v2

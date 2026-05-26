@@ -2,6 +2,9 @@ import express, { Request, Response, NextFunction } from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
+// NOTE: vite is imported statically here — esbuild will tree-shake it in production
+// because createViteServer is only called inside `if (NODE_ENV !== 'production')`
+
 import { db } from "./src/db/index";
 import {
   users,
@@ -1369,7 +1372,9 @@ export async function startServer() {
 
   // --- Vite Middleware / Static Files ---
   if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
+    // Dynamic import so esbuild can tree-shake this entire block in production
+    const { createServer: createViteServerDyn } = await import("vite");
+    const vite = await createViteServerDyn({
       server: { middlewareMode: true },
       appType: "spa",
     });
