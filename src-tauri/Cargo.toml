@@ -1,0 +1,25 @@
+[package]
+name = "medical-guest-house"
+version = "1.0.0"
+description = "نظام إدارة دار الضيافة الطبية"
+authors = ["Nada AbdElkareem"]
+edition = "2021"
+
+[lib]
+name = "medical_guest_house_lib"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true

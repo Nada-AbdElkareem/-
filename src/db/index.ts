@@ -1,10 +1,19 @@
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import Database from "better-sqlite3";
+import { drizzle } from "drizzle-orm/node-sqlite";
+import { DatabaseSync } from "node:sqlite";
 import * as schema from "./schema";
 import path from "path";
+import { existsSync, mkdirSync } from "fs";
+import { dirname } from "path";
 
-// DB_PATH is set by Electron's main.cjs (points to userData dir in production)
-// Fallback to project root for standalone web server (dev mode)
+// DB_PATH is set by Tauri's main.rs at runtime
+// Fallback to project root for dev mode
 const dbPath = process.env.DB_PATH || path.join(process.cwd(), "sqlite_db.db");
-export const sqlite = new Database(dbPath);
+
+// Ensure the directory exists
+const dir = dirname(dbPath);
+if (!existsSync(dir)) {
+  mkdirSync(dir, { recursive: true });
+}
+
+export const sqlite = new DatabaseSync(dbPath);
 export const db = drizzle(sqlite, { schema });

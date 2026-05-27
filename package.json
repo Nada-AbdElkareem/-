@@ -10,20 +10,17 @@
   },
   "license": "MIT",
   "type": "module",
-  "main": "electron/main.cjs",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --external:better-sqlite3 --define:process.env.NODE_ENV='\"production\"' --outfile=dist/server.cjs",
-    "start": "node dist/server.cjs",
-    "clean": "rm -rf dist dist-electron",
+    "build:frontend": "vite build",
+    "build:server": "esbuild server.ts --bundle --platform=node --format=cjs --define:process.env.NODE_ENV='\"production\"' --outfile=dist/server.cjs",
+    "build:server:exe": "npx --yes @yao-pkg/pkg dist/server.cjs --targets node22-win-x64 --output dist/server.exe",
+    "build": "npm run build:frontend && npm run build:server && npm run build:server:exe",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "npm run build && tauri build",
     "lint": "tsc --noEmit",
-    "electron": "electron .",
-    "electron:dev": "electron .",
-    "electron:build": "npm run build && electron-builder",
-    "dist": "npm run build && electron-builder --publish never",
-    "dist:win": "npm run build && electron-builder --win --publish never",
-    "dist:linux": "npm run build && electron-builder --linux --publish never",
-    "rebuild": "electron-rebuild -f -w better-sqlite3"
+    "start": "node dist/server.cjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
@@ -34,10 +31,8 @@
     "@tanstack/react-table": "^8.21.3",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/pg": "^8.20.0",
     "@vitejs/plugin-react": "^5.0.4",
     "bcryptjs": "^3.0.3",
-    "better-sqlite3": "^12.10.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
@@ -66,8 +61,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@electron/rebuild": "^3.7.2",
-    "@types/better-sqlite3": "^7.6.13",
+    "@tauri-apps/cli": "^2.11.2",
     "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",
     "@types/react": "^19.2.15",
@@ -75,66 +69,9 @@
     "autoprefixer": "^10.4.21",
     "concurrently": "^9.2.1",
     "drizzle-kit": "^0.31.10",
-    "electron": "^33.4.11",
-    "electron-builder": "^25.1.8",
     "esbuild": "^0.25.0",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
-    "typescript": "~5.8.2",
-    "wait-on": "^8.0.5"
-  },
-  "build": {
-    "appId": "com.nada.medical-guest-house",
-    "productName": "Medical Guest House System",
-    "copyright": "Copyright © 2025 Nada AbdElkareem",
-    "directories": {
-      "output": "dist-electron",
-      "buildResources": "electron/assets"
-    },
-    "files": [
-      "electron/**/*",
-      "package.json",
-      "node_modules/better-sqlite3/**/*"
-    ],
-    "extraResources": [
-      {
-        "from": "dist",
-        "to": "dist"
-      }
-    ],
-    "asar": true,
-    "asarUnpack": [
-      "node_modules/better-sqlite3/**/*"
-    ],
-    "win": {
-      "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        },
-        {
-          "target": "portable",
-          "arch": [
-            "x64"
-          ]
-        }
-      ]
-    },
-    "linux": {
-      "target": [
-        "AppImage",
-        "deb"
-      ],
-      "category": "Office"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "language": "1025"
-    }
+    "typescript": "~5.8.2"
   }
 }

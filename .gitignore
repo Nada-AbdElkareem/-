@@ -58,3 +58,6 @@ coverage/
 # Temp
 *.tmp
 *.temp
+
+# Tauri build artifacts
+src-tauri/target/

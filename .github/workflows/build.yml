@@ -1,99 +1,93 @@
-name: Build & Release
+name: Build & Release (Tauri)
 
 on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  build-windows:
-    name: 🪟 Windows — Build & Release
+  build-tauri:
+    name: 🦀 Tauri — Windows Build & Release
     runs-on: windows-latest
 
     steps:
       - name: ⬇️ Checkout
         uses: actions/checkout@v4
 
-      - name: ⚙️ Setup Node.js
+      - name: ⚙️ Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
-      - name: 📦 Install dependencies
+      - name: 🦀 Setup Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: 📦 Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: 📦 Install Node dependencies
+        shell: bash
         run: npm ci
 
-      - name: 🔧 Rebuild native modules (better-sqlite3)
+      - name: 🏗️ Build Vite frontend
         shell: bash
-        run: npx electron-rebuild -f -w better-sqlite3
-        env:
-          npm_config_msvs_version: '2022'
-
-      - name: 🏗️ Build frontend (Vite)
-        shell: bash
-        run: npx vite build
+        run: npm run build:frontend
         env:
           NODE_ENV: production
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || 'placeholder' }}
 
-      - name: 🔨 Build backend (esbuild — bundle all deps except better-sqlite3)
+      - name: 🔨 Bundle Express server (esbuild)
         shell: bash
-        run: >-
-          npx esbuild server.ts
-          --bundle
-          --platform=node
-          --format=cjs
-          --external:better-sqlite3
-          --define:process.env.NODE_ENV='"production"'
-          --outfile=dist/server.cjs
+        run: npm run build:server
 
-      - name: ✅ Verify dist contents
+      - name: 📦 Compile server to standalone .exe (pkg)
+        shell: bash
+        run: npm run build:server:exe
+
+      - name: ✅ Verify build outputs
         shell: bash
         run: |
-          echo "=== dist/ files ==="
+          echo "=== dist/ ==="
           ls -lh dist/
-          echo ""
-          echo "=== server.cjs size ==="
-          du -sh dist/server.cjs
+          echo "=== server.exe size ==="
+          du -sh dist/server.exe
 
-      - name: 📦 Package with electron-builder
-        shell: bash
-        run: npx electron-builder --win --publish never
+      - name: 🚀 Build & Release Tauri App
+        uses: tauri-apps/tauri-action@v0
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: 📋 List installer output
-        shell: bash
-        run: ls -lh dist-electron/
-
-      - name: 🚀 Create GitHub Release
-        uses: softprops/action-gh-release@v2
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: "🏥 نظام دار الضيافة الطبية ${{ github.ref_name }}"
-          body: |
+          tagName: ${{ github.ref_name }}
+          releaseName: "🏥 نظام دار الضيافة الطبية ${{ github.ref_name }}"
+          releaseBody: |
             ## 🏥 نظام إدارة دار الضيافة الطبية — ${{ github.ref_name }}
+
+            تطبيق سطح مكتب مبني بـ **Tauri** — أسرع وأخف من أي إصدار سابق.
 
             ### 📥 تحميل وتثبيت على Windows
 
             | الملف | النوع |
             |-------|-------|
-            | `*-Setup.exe` | مثبّت كامل (موصى به) |
-            | `*-Portable.exe` | نسخة محمولة (بدون تثبيت) |
+            | `*_x64-setup.exe` | مثبّت كامل (موصى به) |
+            | `*_x64.msi` | Windows Installer |
 
             ### 🚀 طريقة التثبيت
-            1. حمّل ملف `*-Setup.exe`
+            1. حمّل ملف `*_x64-setup.exe`
             2. شغّل المثبّت واتبع الخطوات
-            3. ابحث عن **نظام دار الضيافة الطبية** في قائمة Start
+            3. ابحث عن **Medical Guest House System** في قائمة Start
 
             ### ⚙️ ملاحظات
             - لا يحتاج Node.js أو أي برامج إضافية
+            - الحجم ~15MB فقط
             - قاعدة البيانات تُنشأ تلقائياً عند أول تشغيل
-          files: |
-            dist-electron/*.exe
-          draft: false
+          releaseDraft: false
           prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
